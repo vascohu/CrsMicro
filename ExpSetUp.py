@@ -279,6 +279,11 @@ class Worker:
     WORKER_NAME = ["Simulation_Worker", "Discrete_Choice_Worker"];
     
     @abstractmethod
+    def getProbability(self, price):
+        while False:
+            yield None;
+    
+    @abstractmethod
     def accept_or_reject(self, price):
         while False:
             yield None;
@@ -289,6 +294,14 @@ class Simulation_Worker(Worker):
     
     def __init__(self, n):
         self.cost = random.uniform(PRICE_ARMS[0],PRICE_ARMS[-1]);
+    
+    def getProbability(self, price):
+        Pr = (price - PRICE_ARMS[0])/(PRICE_ARMS[-1]-PRICE_ARMS[0]);
+        if Pr > 1:
+            Pr = 1;
+        elif Pr < 0:
+            Pr = 0;
+        return Pr;
         
     def accept_or_reject(self, price):
         if self.cost <= price:
@@ -305,6 +318,10 @@ class Discrete_Choice_Worker(Worker):
         self.s = 15;
         self.b = -0.39;
         self.M =2000;
+        
+    def getProbability(self, price):
+        return exp(price/self.s - self.b)/(exp(price/self.s - self.b) + self.M);
+    
         
     def accept_or_reject(self, price):
         Pr = exp(price/self.s - self.b)/(exp(price/self.s - self.b) + self.M);
@@ -414,6 +431,19 @@ def mechTest(mechIndex, workerIndex, ratio):
     print("Test on " + mechName + " is finished!")
 
 
+def optTest(workerIndex, ratio):
+    workerName = Worker.WORKER_NAME[workerIndex];
+    CDF = zeros(PRICE_ARMS.size);
+    for i in range(PRICE_ARMS.size):
+        CDF[i] = workerName.getProbability(PRICE_ARMS[i]);
+    WRNUM = 20000;
+    BUDGET = WRNUM*ratio;
+    Res1, Res2 = OptimalStrategy(PRICE_ARMS, CDF, BUDGET, WRNUM)
+    Res3 = OptimalFixPrice(PRICE_ARMS, CDF, BUDGET, WRNUM)
+    print(Res1)
+    print(Res2)
+    print(Res3)
+
 import sys, getopt
 
 def main(argv):
@@ -421,7 +451,7 @@ def main(argv):
     workertype = -1;
     ratio = -1;
     try:
-        opts, args = getopt.getopt(argv,"lm:w:c:",["mechanism=","worker="])
+        opts, args = getopt.getopt(argv,"lmp:w:c:",["mechanism=","worker="])
     except getopt.GetoptError:
         print('test.py -m <mechanism index> -w <worker index> -c <budget/worker>')
         sys.exit(2)
@@ -436,6 +466,8 @@ def main(argv):
             workertype = int(arg)
         elif opt in ("-c", "--budget worker ratio"):
             ratio = float(arg)
+        elif opt in ("-p", "--optimal cases"):
+            mechtype = len(Mechanism.MECH_NAME);
     if min([mechtype,workertype,ratio])<0:
         print('test.py -m <mechanism index> -w <worker index> -c <budget/worker>')
         sys.exit(2);
