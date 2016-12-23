@@ -451,7 +451,7 @@ def main(argv):
     workertype = -1;
     ratio = -1;
     try:
-        opts, args = getopt.getopt(argv,"lmp:w:c:",["mechanism=","worker="])
+        opts, args = getopt.getopt(argv,"lpm:w:c:",["mechanism=","worker="])
     except getopt.GetoptError:
         print('test.py -m <mechanism index> -w <worker index> -c <budget/worker>')
         sys.exit(2)
@@ -472,7 +472,10 @@ def main(argv):
         print('test.py -m <mechanism index> -w <worker index> -c <budget/worker>')
         sys.exit(2);
     
-    mechTest(mechtype, workertype, ratio)
+    if mechtype < len(Mechanism.MECH_NAME):
+        mechTest(mechtype, workertype, ratio);
+    else:
+        optTest(workertype, ratio);
 
 
 if __name__ == "__main__":
