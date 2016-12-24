@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 #PRICE_ARMS = arange(0.1,2.05,0.05);
 PRICE_ARMS = arange(1,201,1);
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractclassmethod
 
 # The class to define the mechanism interface
 class Mechanism:
@@ -278,8 +278,8 @@ class Worker:
     
     WORKER_NAME = ["Simulation_Worker", "Discrete_Choice_Worker"];
     
-    @abstractmethod
-    def getProbability(self, price):
+    @abstractclassmethod
+    def getProbability(self,price):
         while False:
             yield None;
     
@@ -294,7 +294,9 @@ class Simulation_Worker(Worker):
     
     def __init__(self, n):
         self.cost = random.uniform(PRICE_ARMS[0],PRICE_ARMS[-1]);
+
     
+    @abstractclassmethod
     def getProbability(self, price):
         Pr = (price - PRICE_ARMS[0])/(PRICE_ARMS[-1]-PRICE_ARMS[0]);
         if Pr > 1:
@@ -314,11 +316,15 @@ class Discrete_Choice_Worker(Worker):
     # PRICE_ARMS = arange(1,201,1);
     # BUDGET/WORKNUM = 10~50;
     
+    
+    s = 15;
+    b = -0.39;
+    M =2000;
+
     def __init__(self, n):
-        self.s = 15;
-        self.b = -0.39;
-        self.M =2000;
-        
+        None;        
+    
+    @abstractclassmethod
     def getProbability(self, price):
         return exp(price/self.s - self.b)/(exp(price/self.s - self.b) + self.M);
     
@@ -373,7 +379,7 @@ def OptimalFixPrice(PRICES, CDF, BUDGET, WRNUM):
     util = [];
     for i in range(len(PRICES)):
         util.append(min(CDF[i], BUDGET/WRNUM/PRICES[i]));
-    print(util);
+    # print(util);
     return max(util);
     
     
@@ -433,16 +439,17 @@ def mechTest(mechIndex, workerIndex, ratio):
 
 def optTest(workerIndex, ratio):
     workerName = Worker.WORKER_NAME[workerIndex];
+    workerClass = getattr(modules[__name__], workerName);
     CDF = zeros(PRICE_ARMS.size);
     for i in range(PRICE_ARMS.size):
-        CDF[i] = workerName.getProbability(PRICE_ARMS[i]);
+        CDF[i] = workerClass.getProbability(PRICE_ARMS[i]);
     WRNUM = 20000;
     BUDGET = WRNUM*ratio;
     Res1, Res2 = OptimalStrategy(PRICE_ARMS, CDF, BUDGET, WRNUM)
     Res3 = OptimalFixPrice(PRICE_ARMS, CDF, BUDGET, WRNUM)
-    print(Res1)
-    print(Res2)
-    print(Res3)
+    print("Optimal Strateg---> ",Res1)
+    #print(Res2)
+    print("Optimal Price--->  ", Res3)
 
 import sys, getopt
 
