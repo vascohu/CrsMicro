@@ -5,6 +5,7 @@ import pickle
 
 #PRICE_ARMS = arange(0.1,2.05,0.05);
 PRICE_ARMS = arange(1,201,1);
+PRICE_ARMSl = [];
 
 from abc import ABCMeta, abstractmethod, abstractclassmethod
 
@@ -364,14 +365,16 @@ class MTurkWorker(Worker):
         
     @abstractclassmethod
     def setPriceArms(self):
-        global PRICE_ARMS
+        global PRICE_ARMS 
+        global PRICE_ARMSl
         PRICE_ARMS = self.MTurkModel[0];
+        PRICE_ARMSl = list(self.MTurkModel[0]);
         print("Now, we can set the price as ", PRICE_ARMS[0], PRICE_ARMS[1], "...", PRICE_ARMS[-1]);
     
     @abstractclassmethod
     def getProbability(self, price):
-        k = self.MTurkWorker[0].index(price);
-        return self.MTurkModel[1][k];
+        k = PRICE_ARMSl.index(price);
+        return self.MTurkModel[1][k]/self.MTurkModel[1][-1];
     
     @abstractmethod
     def accept_or_reject(self, price):
