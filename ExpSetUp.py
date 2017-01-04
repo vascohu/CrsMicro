@@ -1,6 +1,7 @@
 from numpy import *
 from math import *
 import matplotlib.pyplot as plt
+import pickle
 
 #PRICE_ARMS = arange(0.1,2.05,0.05);
 PRICE_ARMS = arange(1,201,1);
@@ -276,13 +277,20 @@ class BMCUB(Mechanism):
 class Worker:
     __metaclass__ = ABCMeta;
     
-    WORKER_NAME = ["Simulation_Worker", "Discrete_Choice_Worker"];
+    WORKER_NAME = ["Simulation_Worker", "Discrete_Choice_Worker", "MTurkWorker"];
+    
+    global PRICE_ARMS;
+    
+    @abstractclassmethod
+    def setPriceArms(self):
+        while False:
+            yield None;    
     
     @abstractclassmethod
     def getProbability(self,price):
         while False:
             yield None;
-    
+          
     @abstractmethod
     def accept_or_reject(self, price):
         while False:
@@ -290,11 +298,14 @@ class Worker:
             
             
 class Simulation_Worker(Worker):
-    global PRICE_ARMS;
     
     def __init__(self, n):
         self.cost = random.uniform(PRICE_ARMS[0],PRICE_ARMS[-1]);
 
+    @abstractclassmethod
+    def setPriceArms(self):
+        global PRICE_ARMS
+        PRICE_ARMS = arange(0.1,2.05,0.05);
     
     @abstractclassmethod
     def getProbability(self, price):
@@ -304,7 +315,8 @@ class Simulation_Worker(Worker):
         elif Pr < 0:
             Pr = 0;
         return Pr;
-        
+    
+    @abstractmethod    
     def accept_or_reject(self, price):
         if self.cost <= price:
             return(1);
@@ -314,9 +326,7 @@ class Simulation_Worker(Worker):
 
 class Discrete_Choice_Worker(Worker):
     # PRICE_ARMS = arange(1,201,1);
-    # BUDGET/WORKNUM = 10~50;
-    
-    
+    # BUDGET/WORKNUM = 10~50;  
     s = 15;
     b = -0.39;
     M =2000;
@@ -325,10 +335,15 @@ class Discrete_Choice_Worker(Worker):
         None;        
     
     @abstractclassmethod
+    def setPriceArms(self):
+        global PRICE_ARMS
+        PRICE_ARMS = arange(1,201,1);
+        
+    @abstractclassmethod
     def getProbability(self, price):
         return exp(price/self.s - self.b)/(exp(price/self.s - self.b) + self.M);
     
-        
+    @abstractmethod     
     def accept_or_reject(self, price):
         Pr = exp(price/self.s - self.b)/(exp(price/self.s - self.b) + self.M);
         temp = random.uniform(0,1);
@@ -336,7 +351,37 @@ class Discrete_Choice_Worker(Worker):
             return(1);
         else:
             return(0);
-       
+
+class MTurkWorker(Worker):
+    ''' Use the MTurk data to construct the worker model
+    '''
+    
+    with open("Exp4/MTurk.data", 'rb') as fp:
+        MTurkModel = pickle.load(fp); 
+    
+    def __init__(self, n):
+        None;          
+        
+    @abstractclassmethod
+    def setPriceArms(self):
+        global PRICE_ARMS
+        PRICE_ARMS = self.MTurkModel[0];
+        print("Now, we can set the price as ", PRICE_ARMS[0], PRICE_ARMS[1], "...", PRICE_ARMS[-1]);
+    
+    @abstractclassmethod
+    def getProbability(self, price):
+        k = self.MTurkWorker[0].index(price);
+        return self.MTurkModel[1][k];
+    
+    @abstractmethod
+    def accept_or_reject(self, price):
+        Pr = self.getProbability(price);
+        temp = random.uniform(0,1);
+        if temp <= Pr:
+            return(1);
+        else:
+            return(0);
+    
 from sys import modules  
 class CroSPlatform:
 
@@ -345,6 +390,7 @@ class CroSPlatform:
         self.workerNum = workerNum;
         mechClass = getattr(modules[__name__], mechName);
         workerClass = getattr(modules[__name__], workerName);
+        workerClass.setPriceArms();
         self.mechanism = mechClass(self.workerNum, self.budget, 1);
         # self.mechanism = BP_UCB(self.workerNum, self.budget, 1);
         # self.mechanism = BMCUB(self.workerNum, self.budget, 1);
@@ -405,7 +451,7 @@ def Test(pid, WRNNUM, util_q, mechName, workerName, ratio):
     util_q.put((WRNNUM,util_l));
 
 import multiprocessing as mtp
-import pickle
+
 
 workerNum = arange(1000,21000,1000);
 util = zeros(workerNum.size);
@@ -440,6 +486,7 @@ def mechTest(mechIndex, workerIndex, ratio):
 def optTest(workerIndex, ratio):
     workerName = Worker.WORKER_NAME[workerIndex];
     workerClass = getattr(modules[__name__], workerName);
+    workerClass.setPriceArms();
     CDF = zeros(PRICE_ARMS.size);
     for i in range(PRICE_ARMS.size):
         CDF[i] = workerClass.getProbability(PRICE_ARMS[i]);
