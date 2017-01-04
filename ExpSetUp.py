@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 #PRICE_ARMS = arange(0.1,2.05,0.05);
-PRICE_ARMS = arange(1,201,1);
+PRICE_ARMS = arange(1,101);
 PRICE_ARMSl = [];
 
 from abc import ABCMeta, abstractmethod, abstractclassmethod
@@ -367,15 +367,18 @@ class MTurkWorker(Worker):
     def setPriceArms(self):
         global PRICE_ARMS 
         global PRICE_ARMSl
-        PRICE_ARMS = self.MTurkModel[0];
-        PRICE_ARMSl = list(self.MTurkModel[0]);
+        PRICE_ARMS = array(self.MTurkModel[0][0:100]);
+        PRICE_ARMSl = list(self.MTurkModel[0][0:100]);
         print("Now, we can set the price as ", PRICE_ARMS[0], PRICE_ARMS[1], "...", PRICE_ARMS[-1]);
     
     @abstractclassmethod
     def getProbability(self, price):
-        k = PRICE_ARMSl.index(price);
-        return self.MTurkModel[1][k]/self.MTurkModel[1][-1];
-    
+        if price >= PRICE_ARMS[0]:
+            k = PRICE_ARMSl.index(price);
+            return self.MTurkModel[1][k]/self.MTurkModel[1][-1];
+        else:
+            return 0;
+                
     @abstractmethod
     def accept_or_reject(self, price):
         Pr = self.getProbability(price);
@@ -447,7 +450,7 @@ def OptimalStrategy(PRICES, CDF, BUDGET, WRNUM):
     
 def Test(pid, WRNNUM, util_q, mechName, workerName, ratio):
     util_l = []
-    for i in range(100):
+    for i in range(3):
         Test1 = CroSPlatform(ratio*WRNNUM, WRNNUM, mechName, workerName);
         util = Test1.testMech();
         util_l.append(util);
@@ -456,7 +459,7 @@ def Test(pid, WRNNUM, util_q, mechName, workerName, ratio):
 import multiprocessing as mtp
 
 
-workerNum = arange(1000,21000,1000);
+workerNum = arange(1000,2000,1000);
 util = zeros(workerNum.size);
 
 def mechTest(mechIndex, workerIndex, ratio):
@@ -536,4 +539,5 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    mechTest(3, 2, 0.1);
+    #main(sys.argv[1:])
